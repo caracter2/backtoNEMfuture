@@ -1,4 +1,5 @@
 import pandas as pd
+import datetime
 import streamlit as st
 import predispatch_daily
 
@@ -22,7 +23,7 @@ date_selection_type = st.radio(
 if date_selection_type == 'Specific date':
     selected_date = st.date_input('specific date')
 else:
-    selected_date = pd.to_datetime(pd.to_datetime(date).date()) - datetime.timedelta(minutes = 30)
+    selected_date = pd.to_datetime(datetime.date.today()) - datetime.timedelta(minutes = 30)
      
 
 new_fig = predispatch_daily.create_date_fig(date = selected_date,
