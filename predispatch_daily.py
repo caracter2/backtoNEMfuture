@@ -227,7 +227,7 @@ def current_info(table_name:str ='PredispatchIS_Reports'):
 
 
 
-def latest_data_archive_date(verify = False):
+def latest_data_archive_date(verify = True):
     '''returns the latest date available in the NemWeb Data Archive.
     verify variable establishes whether to check SSL cert. Default is false, can also be set to "Q:\certs\ca-bundle-git.crt" to use self-signed certs in Q drive.
     '''
