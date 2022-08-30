@@ -157,7 +157,7 @@ def archive_info(table_name:str = 'PredispatchIS_Reports'):
     "Yesterdays_MNSPBids_Reports".
     
     Default is "PredispatchIS_Reports" '''
-    verify = False
+    verify = True
     pd_archive_url = f'http://nemweb.com.au/Reports/Archive/{table_name}/'
     reqs = requests.get(pd_archive_url, verify = verify)
     soup = BeautifulSoup(reqs.text, 'html.parser')
@@ -202,7 +202,7 @@ def current_info(table_name:str ='PredispatchIS_Reports'):
     Default is "PredispatchIS_Reports"
     
     '''
-    verify = False
+    verify = True
     pd_archive_url = f'http://nemweb.com.au/Reports/Current/{table_name}/'
     reqs = requests.get(pd_archive_url, verify = verify)
     soup = BeautifulSoup(reqs.text, 'html.parser')
@@ -267,7 +267,7 @@ def latest_data_archive_date(verify = False):
     return latest_date
 
 
-def earliest_data_archive_date(verify = False):
+def earliest_data_archive_date(verify = True):
     '''returns the latest date available in the NemWeb Data Archive.
     verify variable establishes whether to check SSL cert. Default is false, can also be set to "Q:\certs\ca-bundle-git.crt" to use self-signed certs in Q drive.
     '''
@@ -454,7 +454,7 @@ def get_nemweb_table(url, table_name, as_of=None):
     table_name = table_name.upper()
     
     # Download file and open zip
-    file = requests.get(url, verify = False)    
+    file = requests.get(url, verify = True)    
     z = ZipFile(io.BytesIO(file.content))
     
     # Set list of files as a dataframe:
