@@ -2,7 +2,6 @@
 import pandas as pd
 import numpy as np
 import datetime
-import pyodbc
 import io
 import plotly.express as px
 import requests
@@ -10,8 +9,6 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 from zipfile import ZipFile
 import functools
-import st
-
 
 
 
@@ -694,5 +691,3 @@ def create_date_fig(date = pd.to_datetime(datetime.date.today()),state = 'NSW',m
 
 
 
-new_fig = create_date_fig(state = 'NSW', keep_all=False)
-st.plotly_chart(new_fig)
