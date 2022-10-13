@@ -4,3 +4,5 @@ pandas==1.4.3
 numpy==1.19.5
 beautifulsoup4==4.11.1
 zipp==3.8.1
+nemosis
+urllib3

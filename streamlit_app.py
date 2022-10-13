@@ -9,12 +9,12 @@ state_selected = st.selectbox(
      'State',
      ('NSW','QLD','VIC','SA','TAS'))
 
-market_selected = st.selectbox('Market',
-                                ('Energy','LOWER5MIN', 'LOWER60SEC', 'LOWER6SEC', 'LOWERREG',
-                                'RAISE5MIN','RAISE60SEC', 'RAISE6SEC', 'RAISEREG')
-                                )
+# market_selected = st.selectbox('Market',
+#                                 ('Energy','LOWER5MIN', 'LOWER60SEC', 'LOWER6SEC', 'LOWERREG',
+#                                 'RAISE5MIN','RAISE60SEC', 'RAISE6SEC', 'RAISEREG')
+#                                 )
 
-show_future_settled = st.checkbox('Show future settled prices')
+# show_future_settled = st.checkbox('Show future settled prices')
 
 date_selection_type = st.radio(
      "What date would you like to look at?",
@@ -22,15 +22,17 @@ date_selection_type = st.radio(
 
 if date_selection_type == 'Specific date':
     selected_date = st.date_input('specific date')
+    
 else:
     selected_date = pd.to_datetime(datetime.date.today())
-     
 
-new_fig = predispatch_daily.create_date_fig(date = selected_date,
-                                            state = state_selected,
-                                            keep_all=show_future_settled,
-                                            market = market_selected
-                                            )
+start = pd.to_datetime(selected_date)
+end =  selected_date + pd.Timedelta('1d')
+
+new_fig = predispatch_daily.create_forecast_vs_actuals_chart(actuals = get_trading_price_NEMWEB(start, end),
+                                       predispatch = get_predispatch_price_NEMWEB(start, end),
+                                       state = 'NSW')
+
 st.plotly_chart(new_fig)
 
 st.button("Re-fresh")
