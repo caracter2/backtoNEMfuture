@@ -31,7 +31,7 @@ end =  selected_date + pd.Timedelta('1d')
 
 new_fig = predispatch_daily.create_forecast_vs_actuals_chart(actuals = predispatch_daily.get_trading_price_NEMWEB(start, end),
                                        predispatch = predispatch_daily.get_predispatch_price_NEMWEB(start, end),
-                                       state = 'NSW')
+                                       state = state_selected)
 
 st.plotly_chart(new_fig)
 
