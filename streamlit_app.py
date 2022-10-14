@@ -20,8 +20,10 @@ date_selection_type = st.radio(
      "What date would you like to look at?",
      ('Yesterday','Today', 'Specific date'))
 
+specific_date = st.date_input('specific date')
+
 if date_selection_type == 'Specific date':
-    selected_date = st.date_input('specific date')
+    selected_date = specific_date
 
 elif date_selection_type == 'Today':
     selected_date = pd.to_datetime(datetime.date.today())
