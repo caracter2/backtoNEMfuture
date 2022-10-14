@@ -265,6 +265,22 @@ def get_trading_price_NEMWEB(start = datetime.date.today(),
     start_str = start.strftime('%Y/%m/%d %H:%M:%S')
     end_str = end.strftime('%Y/%m/%d %H:%M:%S')
     nemosis_success = False
+
+
+    ## debug
+    price_data = (dynamic_data_compiler(start_str, end_str, 'DISPATCHPRICE', 'cache', keep_csv = False)
+                    .filter(['SETTLEMENTDATE','REGIONID','RRP'])
+                    )
+    price_data.SETTLEMENTDATE = pd.to_datetime(price_data.SETTLEMENTDATE)
+    price_data.RRP = price_data.RRP.astype(float)
+
+    if (len(price_data)> 0 and
+        price_data.SETTLEMENTDATE.max() >= end and
+        price_data.SETTLEMENTDATE.min() <= start+pd.Timedelta('5min')):
+        
+        nemosis_success = True
+    ##debug
+
     try:
         price_data = (dynamic_data_compiler(start_str, end_str, 'DISPATCHPRICE', 'cache', keep_csv = False)
                       .filter(['SETTLEMENTDATE','REGIONID','RRP'])
