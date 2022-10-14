@@ -18,13 +18,16 @@ state_selected = st.selectbox(
 
 date_selection_type = st.radio(
      "What date would you like to look at?",
-     ('Today', 'Specific date'))
+     ('Yesterday','Today', 'Specific date'))
 
 if date_selection_type == 'Specific date':
     selected_date = st.date_input('specific date')
+
+elif date_selection_type == 'Today':
+    selected_date = pd.to_datetime(datetime.date.today())
     
 else:
-    selected_date = pd.to_datetime(datetime.date.today())
+    selected_date = pd.to_datetime(datetime.date.today()-pd.Timedelta('1d'))
 
 start = pd.to_datetime(selected_date)
 end =  selected_date + pd.Timedelta('1d')
