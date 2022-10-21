@@ -1,5 +1,3 @@
-
-from tkinter import EXCEPTION
 import pandas as pd
 import numpy as np
 import datetime
