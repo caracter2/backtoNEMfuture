@@ -5,9 +5,7 @@ import predispatch_daily
 
 st.title('Day-slice NEM Predispatch Predictions')
 
-state_selected = st.selectbox(
-     'State',
-     ('NSW','QLD','VIC','SA','TAS'))
+
 
 # market_selected = st.selectbox('Market',
 #                                 ('Energy','LOWER5MIN', 'LOWER60SEC', 'LOWER6SEC', 'LOWERREG',
@@ -16,20 +14,31 @@ state_selected = st.selectbox(
 
 # show_future_settled = st.checkbox('Show future settled prices')
 
-date_selection_type = st.radio(
-     "What date would you like to look at?",
-     ('Yesterday','Today', 'Specific date'))
 
-specific_date = st.date_input('specific date')
 
-if date_selection_type == 'Specific date':
-    selected_date = specific_date
+with st.sidebar:
+    dateform = st.form(key='my_form')
+    state_selected = dateform.selectbox(
+        'State',
+        ('NSW','QLD','VIC','SA','TAS'))
+    date_selection_type = dateform.radio(
+        "What date would you like to look at?",
+        ('Yesterday','Today', 'Specific date'))
+    specific_date = dateform.date_input('specific date')
+    submit_button = dateform.form_submit_button(label='Load data')
 
-elif date_selection_type == 'Today':
-    selected_date = pd.to_datetime(datetime.date.today())
-    
-else:
-    selected_date = pd.to_datetime(datetime.date.today()-pd.Timedelta('1d'))
+    if date_selection_type == 'Specific date':
+        selected_date = specific_date
+    elif date_selection_type == 'Today':
+        selected_date = pd.to_datetime(datetime.date.today())
+        
+    else:
+        #(yesterday)
+        selected_date = pd.to_datetime(datetime.date.today()-pd.Timedelta('1d'))
+
+    st.write(f'Selected state: {state_selected}')
+    st.write(f'Selected date: {selected_date.strftime("%Y %b %d")}')
+
 
 start = pd.to_datetime(selected_date)
 end =  selected_date + pd.Timedelta('1d')
@@ -38,6 +47,6 @@ new_fig = predispatch_daily.create_forecast_vs_actuals_chart(actuals = predispat
                                        predispatch = predispatch_daily.get_predispatch_price_NEMWEB(start, end),
                                        state = state_selected)
 
-st.plotly_chart(new_fig)
+st.plotly_chart(new_fig, use_container_width =True)
 
-st.button("Re-fresh")
+st.button("Refresh")

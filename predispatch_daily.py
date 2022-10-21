@@ -1,5 +1,5 @@
 
-from nemosis import dynamic_data_compiler
+from tkinter import EXCEPTION
 import pandas as pd
 import numpy as np
 import datetime
@@ -13,6 +13,7 @@ import plotly.express as px
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import functools
+import streamlit as st
 
 @functools.lru_cache(maxsize=None, typed=False)
 def get_nemweb_file(url, table_name='', filter_column_n = None, filter_value = None, as_of=None):
@@ -215,6 +216,8 @@ def crunch_archive_predispatch_file(url):
 
 def get_predispatch_price_NEMWEB(start = datetime.date.today(),
                                  end = datetime.date.today() + datetime.timedelta(days=1)):
+    
+    
     pd_data = None
     start = pd.to_datetime(start)
     end = pd.to_datetime(end)
@@ -222,38 +225,68 @@ def get_predispatch_price_NEMWEB(start = datetime.date.today(),
     assert start >= pd.to_datetime('1 jul 2009'), 'predispatch price data only exists from 1 Jul 2009 onwards.'
     
     list_of_files = get_required_pd_files_list(start, end)
-#     display(list_of_files)
+    num_files = len(list_of_files)
+    i = 0
+
     files_data = []
-    # archive files
-    for url in tqdm(list_of_files.query('source == "archive"').url.values):
-        data = (crunch_archive_predispatch_file(url)
-                .query('interval_30>= @start')
-                .query('interval_30<= @end')
-                .query('from_datetime>= @start')
-                .query('from_datetime<= @end')
-               )
-        files_data.append(data)
+    with st.spinner('getting forecast data...'):
+        pd_progress_bar = st.progress(0)
+        # archive files
+        for url in tqdm(list_of_files.query('source == "archive"').url.values):
+            i+=1
+            pd_progress_bar.progress(i/num_files)
+            data = (crunch_archive_predispatch_file(url)
+                    .query('interval_30>= @start')
+                    .query('interval_30<= @end')
+                    .query('from_datetime>= @start')
+                    .query('from_datetime<= @end')
+                )
+            files_data.append(data)
 
-    # current files
-    for url in tqdm(list_of_files.query('source == "current"').url.values):
-        data = (crunch_current_predispatch_file(url)
-                .query('interval_30>= @start')
-                .query('interval_30<= @end')
-                .query('from_datetime>= @start')
-                .query('from_datetime<= @end')
-               )
-        
-        files_data.append(data)
+        # current files
+        for url in tqdm(list_of_files.query('source == "current"').url.values):
+            i+=1
+            pd_progress_bar.progress(i/num_files)
+            data = (crunch_current_predispatch_file(url)
+                    .query('interval_30>= @start')
+                    .query('interval_30<= @end')
+                    .query('from_datetime>= @start')
+                    .query('from_datetime<= @end')
+                )
+            
+            files_data.append(data)
 
-    all_data = (pd.concat(files_data)
-                .drop_duplicates()
-                .sort_values(by = ['from_datetime','interval_30','REGIONID'])
-                .reset_index(drop=True)
-                .rename(columns = {'REGIONID':'region','RRP':'forecast_30min'})
-               )
-    all_data.from_datetime = pd.to_datetime(all_data.from_datetime)
-    all_data.interval_30 = pd.to_datetime(all_data.interval_30)
+        all_data = (pd.concat(files_data)
+                    .drop_duplicates()
+                    .sort_values(by = ['from_datetime','interval_30','REGIONID'])
+                    .reset_index(drop=True)
+                    .rename(columns = {'REGIONID':'region','RRP':'forecast_30min'})
+                )
+        all_data.from_datetime = pd.to_datetime(all_data.from_datetime)
+        all_data.interval_30 = pd.to_datetime(all_data.interval_30)
+        pd_progress_bar.empty()
     return all_data
+
+def crunch_archive_dispatch_price_file(url):
+    data = (get_nemweb_file(url,filter_column_n = 3, filter_value = 'PRICE')
+        .dropna(axis=1)
+        .filter(['SETTLEMENTDATE','REGIONID','RRP'])
+       )
+    return data
+
+def get_dispatch_price_archive_files(start, end):
+    start = pd.to_datetime(start)
+    end = pd.to_datetime(end)
+    dates = (pd.DataFrame({'dates':pd.date_range(start,end,freq='1d')}))
+    dates = (dates
+             .assign(month = dates.dates.dt.month.astype(str).str.zfill(2))
+             .assign(year = dates.dates.dt.year.astype(str))
+             .drop_duplicates(subset=['month','year'])
+            )
+    prefix = r'https://nemweb.com.au/data_archive/Wholesale_Electricity/MMSDM/'
+    dates['links'] = dates.apply(lambda df: prefix +f'{df.year}/MMSDM_{df.year}_{df.month}/MMSDM_Historical_Data_SQLLoader/DATA/PUBLIC_DVD_DISPATCHPRICE_{df.year}{df.month}010000.zip',axis=1)
+    
+    return dates
 
 
 def get_trading_price_NEMWEB(start = datetime.date.today(),
@@ -264,44 +297,90 @@ def get_trading_price_NEMWEB(start = datetime.date.today(),
     assert start >= pd.to_datetime('1 jul 2009'), 'trading price data only exists from 1 Jul 2009 onwards.'
     start_str = start.strftime('%Y/%m/%d %H:%M:%S')
     end_str = end.strftime('%Y/%m/%d %H:%M:%S')
-    nemosis_success = False
+    archive_success = False
 
 
-    # ## debug
-    # price_data = (dynamic_data_compiler(start_str, end_str, 'DISPATCHPRICE', 'cache', keep_csv = False)
-    #                 .filter(['SETTLEMENTDATE','REGIONID','RRP'])
-    #                 )
-    # price_data.SETTLEMENTDATE = pd.to_datetime(price_data.SETTLEMENTDATE)
-    # price_data.RRP = price_data.RRP.astype(float)
-
-    # if (len(price_data)> 0 and
-    #     price_data.SETTLEMENTDATE.max() >= end and
-    #     price_data.SETTLEMENTDATE.min() <= start+pd.Timedelta('5min')):
-        
-    #     nemosis_success = True
-    # ##debug
-
-    try:
-        price_data = (dynamic_data_compiler(start_str, end_str, 'DISPATCHPRICE', 'cache', keep_csv = False)
-                      .filter(['SETTLEMENTDATE','REGIONID','RRP'])
-                     )
-        price_data.SETTLEMENTDATE = pd.to_datetime(price_data.SETTLEMENTDATE)
-        price_data.RRP = price_data.RRP.astype(float)
-
-        if (len(price_data)> 0 and
-            price_data.SETTLEMENTDATE.max() >= end and
-            price_data.SETTLEMENTDATE.min() <= start+pd.Timedelta('5min')):
-            
-            nemosis_success = True
-    except:
-        print('Incomplete or failed attempt to get data using Nemosis.')
-        nemosis_success = False
-    
-    public_prices_success = False
-    
-    if not nemosis_success:
+    with st.spinner('getting settled prices data...'):
+        settled_prices_progress_bar = st.progress(0.0)
         try:
-            print('Sourcing data from public prices...')
+            files_data =[]
+            archive_tp_list = get_dispatch_price_archive_files(start, end)                
+            num_of_files = len(archive_tp_list)
+            print(f'{num_of_files} to download')
+            i=0
+            for url in tqdm(archive_tp_list.links.values):
+                i+=1
+                settled_prices_progress_bar.progress(i/num_of_files)
+                price_data = crunch_archive_dispatch_price_file(url)
+                price_data.SETTLEMENTDATE = pd.to_datetime(price_data.SETTLEMENTDATE)
+                price_data.RRP = price_data.RRP.astype(float)
+                files_data.append(price_data)
+            price_data = pd.concat(files_data)
+
+            if (len(price_data)> 0 and
+                price_data.SETTLEMENTDATE.max() >= end and
+                price_data.SETTLEMENTDATE.min() <= start+pd.Timedelta('5min')):
+                settled_prices_progress_bar.progress(1.0)
+                archive_success = True
+        except:
+            print('Incomplete or failed attempt to get data from archive.')
+            archive_success = False
+
+        settled_prices_progress_bar.empty()
+        
+        public_prices_success = False
+        
+        if not archive_success:
+            try:
+                print('Sourcing data from public prices...')
+                if not price_data is None:
+                    if len(price_data)>0:
+                        adjusted_start = price_data.SETTLEMENTDATE.max() - pd.Timedelta('1d')
+                    else:
+                        adjusted_start = start
+                else:
+                    adjusted_start = start
+
+                later_end = end + pd.Timedelta('1d')
+                public_prices_list = (get_public_prices_list()
+                                    .query('start >= @adjusted_start')
+                                    .query('end <= @later_end')
+                                    )
+                
+
+                files_data = []
+                num_of_files = len(public_prices_list)
+                i=0
+                for url in tqdm(public_prices_list.links.values):
+                    i+=1
+                    settled_prices_progress_bar.progress(i/num_of_files)
+                    data = (get_nemweb_file(url,filter_column_n = 2, filter_value = 'DREGION')
+                            .dropna(axis=1)
+                            .filter(['SETTLEMENTDATE','REGIONID','RRP'])
+                            .drop_duplicates()
+                            .query('SETTLEMENTDATE != "SETTLEMENTDATE"')
+                        )
+
+                    files_data.append(data)
+
+                daily_report_data = pd.concat(files_data)
+
+                if not price_data is None:
+                    price_data = pd.concat([price_data,daily_report_data])
+                    price_data.SETTLEMENTDATE = pd.to_datetime(price_data.SETTLEMENTDATE)
+                    price_data.RRP = price_data.RRP.astype(float)
+
+                    if (len(price_data)> 0 and
+                        price_data.SETTLEMENTDATE.max() >= end and
+                        price_data.SETTLEMENTDATE.min() <= start+pd.Timedelta('5min')):
+
+                        public_prices_success = True
+            except:
+                print('Incomplete or failed attempt to get data daily public prices.')
+                public_prices_success = False
+                
+        if not archive_success and not public_prices_success:
+            print('Sourcing most recent data...')
             if not price_data is None:
                 if len(price_data)>0:
                     adjusted_start = price_data.SETTLEMENTDATE.max() - pd.Timedelta('1d')
@@ -309,73 +388,36 @@ def get_trading_price_NEMWEB(start = datetime.date.today(),
                     adjusted_start = start
             else:
                 adjusted_start = start
-
-            later_end = end + pd.Timedelta('1d')
-            public_prices_list = (get_public_prices_list()
-                                  .query('start >= @adjusted_start')
-                                  .query('end <= @later_end')
-                                 )
-
+                
+            later_end = end
+            recent_prices_list = (get_tradingis_reports_list()
+                                .query('start >= @adjusted_start')
+                                .query('end <= @later_end')
+                                )
+            
             files_data = []
-            for url in tqdm(public_prices_list.links.values):
-                data = (get_nemweb_file(url,filter_column_n = 2, filter_value = 'DREGION')
+            num_of_files = len(recent_prices_list)
+            i=0
+            for url in tqdm(recent_prices_list.links.values):
+                i+=1
+                settled_prices_progress_bar.progress(i/num_of_files)
+                data = (get_nemweb_file(url,table_name = 'PRICE')
                         .dropna(axis=1)
                         .filter(['SETTLEMENTDATE','REGIONID','RRP'])
                         .drop_duplicates()
                         .query('SETTLEMENTDATE != "SETTLEMENTDATE"')
-                       )
-
+                    )
+                
                 files_data.append(data)
 
-            daily_report_data = pd.concat(files_data)
+            settled_prices_progress_bar.empty()    
 
+            recent_prices_data = pd.concat(files_data)
+            
             if not price_data is None:
-                price_data = pd.concat([price_data,daily_report_data])
-                price_data.SETTLEMENTDATE = pd.to_datetime(price_data.SETTLEMENTDATE)
-                price_data.RRP = price_data.RRP.astype(float)
-
-                if (len(price_data)> 0 and
-                    price_data.SETTLEMENTDATE.max() >= end and
-                    price_data.SETTLEMENTDATE.min() <= start+pd.Timedelta('5min')):
-
-                    public_prices_success = True
-        except:
-            print('Incomplete or failed attempt to get data daily public prices.')
-            public_prices_success = False
-            
-    if not nemosis_success and not public_prices_success:
-        print('Sourcing most recent data...')
-        if not price_data is None:
-            if len(price_data)>0:
-                adjusted_start = price_data.SETTLEMENTDATE.max() - pd.Timedelta('1d')
+                price_data = pd.concat([price_data,recent_prices_data])
             else:
-                adjusted_start = start
-        else:
-            adjusted_start = start
-            
-        later_end = end
-        recent_prices_list = (get_tradingis_reports_list()
-                              .query('start >= @adjusted_start')
-                              .query('end <= @later_end')
-                             )
-        
-        files_data = []
-        for url in tqdm(recent_prices_list.links.values):
-            data = (get_nemweb_file(url,table_name = 'PRICE')
-                    .dropna(axis=1)
-                    .filter(['SETTLEMENTDATE','REGIONID','RRP'])
-                    .drop_duplicates()
-                    .query('SETTLEMENTDATE != "SETTLEMENTDATE"')
-                   )
-            
-            files_data.append(data)
-            
-        recent_prices_data = pd.concat(files_data)
-        
-        if not price_data is None:
-            price_data = pd.concat([price_data,recent_prices_data])
-        else:
-            price_data = recent_prices_data
+                price_data = recent_prices_data
     
     price_data.SETTLEMENTDATE = pd.to_datetime(price_data.SETTLEMENTDATE)
     price_data.RRP = price_data.RRP.astype(float)
