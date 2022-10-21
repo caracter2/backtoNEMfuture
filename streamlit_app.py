@@ -3,8 +3,8 @@ import datetime
 import streamlit as st
 import predispatch_daily
 
-st.title('Back to NEM future 🤯')
-
+st.title('Back to NEM Future 🤯')
+st.set_page_config(layout="wide")
 
 # market_selected = st.selectbox('Market',
 #                                 ('Energy','LOWER5MIN', 'LOWER60SEC', 'LOWER6SEC', 'LOWERREG',
@@ -16,7 +16,7 @@ st.title('Back to NEM future 🤯')
 
 
 with st.sidebar:
-    st.heading('Enter selections below')
+    st.header('Enter selections below')
     dateform = st.form(key='my_form')
     state_selected = dateform.selectbox(
         'State',
