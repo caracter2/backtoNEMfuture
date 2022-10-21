@@ -4,7 +4,11 @@ import streamlit as st
 import predispatch_daily
 
 st.title('Back to NEM Future 🤯')
-st.set_page_config(layout="wide")
+def do_at_start():
+    st.set_page_config(layout="wide")
+    return None
+
+do_at_start()
 
 # market_selected = st.selectbox('Market',
 #                                 ('Energy','LOWER5MIN', 'LOWER60SEC', 'LOWER6SEC', 'LOWERREG',
