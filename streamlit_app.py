@@ -3,8 +3,7 @@ import datetime
 import streamlit as st
 import predispatch_daily
 
-st.title('Day-slice NEM Predispatch Predictions')
-
+st.title('Back to NEM future 🤯')
 
 
 # market_selected = st.selectbox('Market',
@@ -17,6 +16,7 @@ st.title('Day-slice NEM Predispatch Predictions')
 
 
 with st.sidebar:
+    st.heading('Enter selections below')
     dateform = st.form(key='my_form')
     state_selected = dateform.selectbox(
         'State',
@@ -37,7 +37,7 @@ with st.sidebar:
         selected_date = pd.to_datetime(datetime.date.today()-pd.Timedelta('1d'))
 
     st.write(f'Selected state: {state_selected}')
-    st.write(f'Selected date: {selected_date.strftime("%Y %b %d")}')
+    st.write(f'Selected date: {selected_date.strftime("%d %b %Y")}')
 
 
 start = pd.to_datetime(selected_date)
