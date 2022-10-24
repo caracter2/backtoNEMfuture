@@ -3,7 +3,7 @@ import datetime
 import streamlit as st
 import predispatch_daily
 
-st.title('Back to NEM Future 🤯')
+st.title('Back to NEM Future 🕥🔁😎')
 # def do_at_start():
 #     st.set_page_config(layout="wide")
 #     return None

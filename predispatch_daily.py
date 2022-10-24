@@ -481,6 +481,13 @@ def create_forecast_vs_actuals_chart(actuals,
                   animation_frame = 'from_datetime_str',
                   title = f'{state} Predispatch prices vs settled'
                  )
+
+    fig.update_layout(legend=dict(
+    orientation="h",
+    yanchor="bottom",
+    y=1.02,
+    xanchor="right",
+    x=1))
     return fig
 
     
